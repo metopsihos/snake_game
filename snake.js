@@ -468,17 +468,14 @@ class SnakeGame {
         });
         
         document.addEventListener('keydown', (e) => {
-            // Determine if user is typing in an input/textarea
-            const activeElTag = (document.activeElement && document.activeElement.tagName) || '';
-            const isTypingNow = activeElTag === 'INPUT' || activeElTag === 'TEXTAREA';
-            // Prevent arrow keys, WASD and Space from scrolling only when not typing and leaderboard not active
-            if (!this.highScoreInputActive && !isTypingNow && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
-                e.preventDefault();
-            }
-
             // Restart with Enter (not Space). Avoid triggering while typing in inputs
             const activeTag = (document.activeElement && document.activeElement.tagName) || '';
             const isTyping = activeTag === 'INPUT' || activeTag === 'TEXTAREA';
+            
+            // Prevent arrow keys and WASD from scrolling the page, but only when not typing
+            if (!isTyping && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+                e.preventDefault();
+            }
             if (!this.gameRunning && this.gameStarted && e.code === 'Enter' && !isTyping) {
                 this.restart();
                 return;
@@ -490,8 +487,8 @@ class SnakeGame {
                 return;
             }
             
-            // Don't process game controls when high score input is active
-            if (this.highScoreInputActive) return;
+            // Don't process game controls when high score input is active or when typing
+            if (this.highScoreInputActive || isTyping) return;
             
             if (!this.gameRunning) return;
             
