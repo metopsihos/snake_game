@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #e8f5e8, #f0f8f0);
+            font-family: 'Comic Sans MS', cursive;
+            overflow: hidden; /* Prevent scrolling */
+        }
+        
+        .game-container {
+            text-align: center;
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: 3px solid #4CAF50;
+            max-width: 95vw;
+            max-height: 95vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            border: 4px solid #2E7D32;
+            border-radius: 10px;
+            background: #E8F5E8;
+            max-width: 85vw;
+            max-height: 70vh;
+            width: auto;
+            height: auto;
+        }
+        
+        .score {
+            font-size: 24px;
+            color: #2E7D32;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .field-info {
+            font-size: 18px;
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .counters {
+            margin-top: 8px;
+            color: #555;
+            font-size: 13px;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            border: 3px solid #f44336;
+            font-size: 24px;
+            color: #f44336;
+            font-weight: bold;
+            display: none;
+            z-index: 100;
+        }
+        
+        .start-screen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            border: 3px solid #4CAF50;
+            text-align: center;
+            z-index: 100;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .start-screen h2 {
+            margin: 0 0 15px 0;
+            color: #2E7D32;
+            font-size: 28px;
+        }
+        
+        .start-screen p {
+            margin: 0 0 25px 0;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Comic Sans MS', cursive;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .start-btn:active {
+            transform: translateY(0);
+        }
+        
+        .settings {
+            margin: 20px 0;
+            text-align: left;
+        }
+        
+        .setting-group {
+            margin-bottom: 15px;
+            background: rgba(76, 175, 80, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+        
+        .setting-group > label {
+            display: block;
+            font-weight: bold;
+            color: #2E7D32;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin-right: 5px;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 13px;
+            color: #555;
+            font-weight: normal;
+        }
+        
+        .radio-group input[type="radio"]:checked + label {
+            color: #2E7D32;
+            font-weight: bold;
+        }
+        
+        .mode-description {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(46, 125, 50, 0.05);
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .custom-bomb-input {
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .custom-bomb-input input[type="number"] {
+            width: 60px;
+            padding: 4px 8px;
+            border: 2px solid rgba(76, 175, 80, 0.3);
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .custom-bomb-input input[type="number"]:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .max-bombs-text {
+            font-size: 11px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Responsive design for smaller screens */
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 10px;
+            }
+            
+            .start-screen {
+                padding: 15px;
+            }
+            
+            .start-screen h2 {
+                font-size: 24px;
+            }
+            
+            .score {
+                font-size: 20px;
+            }
+            
+            .field-info {
+                font-size: 16px;
+            }
+            
+            .controls {
+                font-size: 12px;
+            }
+            
+            .radio-group {
+                gap: 10px;
+            }
+            
+            .setting-group {
+                margin-bottom: 10px;
+                padding: 8px;
+            }
+        }
+        
+        @media (max-height: 600px) {
+            .start-screen {
+                padding: 10px;
+                max-height: 85vh;
+            }
+            
+            .start-screen h2 {
+                margin-bottom: 10px;
+                font-size: 22px;
+            }
+            
+            .setting-group {
+                margin-bottom: 8px;
+                padding: 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="score">
+            <span id="singlePlayerScore">Score: <span id="score">0</span></span>
+            <span id="multiPlayerScores" style="display: none;">
+                Player 1: <span id="player1Score">0</span> | Player 2: <span id="player2Score">0</span>
+            </span>
+        </div>
+        <div class="field-info">Field: <span id="currentField">🏠 Home</span></div>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        <div class="counters" id="fruitCounters"></div>
+        <div class="controls" id="controlsText">
+            Use arrow keys to move the snake!<br>
+            🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!
+        </div>
+        <div class="game-over" id="gameOver">
+            💥 BOOM! Game Over! 💥<br>
+            <small>Press Space to restart</small>
+        </div>
+        <div class="start-screen" id="startScreen">
+            <h2>🐍 Snake and Snack 🐍</h2>
+            <p>Eat fruits, avoid bombs!</p>
+            
+            <div class="settings">
+                <div class="setting-group">
+                    <label>Players:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="singlePlayer" name="playerMode" value="single" checked>
+                        <label for="singlePlayer">👤 Single Player</label>
+                        
+                        <input type="radio" id="multiPlayer" name="playerMode" value="multi">
+                        <label for="multiPlayer">👥 Multiplayer</label>
+                    </div>
+                    <div class="mode-description">
+                        <span style="font-size: 11px; color: #888;">Multiplayer: Player 1 uses arrows ↑↓←→, Player 2 uses WASD</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Game Mode:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="modeCompetitive" name="gameMode" value="competitive" checked>
+                        <label for="modeCompetitive">⚡ Competitive</label>
+                        
+                        <input type="radio" id="modeAdventure" name="gameMode" value="adventure">
+                        <label for="modeAdventure">🗺️ Adventure</label>
+                    </div>
+                    <div class="mode-description" id="modeDescription">
+                        <span id="competitiveDesc">Snake moves automatically - use arrows to change direction</span>
+                        <span id="adventureDesc" style="display: none;">Snake moves only when you press arrows - strategic turn-based gameplay</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Field Size:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="sizeSmall" name="fieldSize" value="small">
+                        <label for="sizeSmall">📱 Small (15x15)</label>
+                        
+                        <input type="radio" id="sizeMedium" name="fieldSize" value="medium" checked>
+                        <label for="sizeMedium">🖥️ Medium (20x20)</label>
+                        
+                        <input type="radio" id="sizeLarge" name="fieldSize" value="large">
+                        <label for="sizeLarge">🖼️ Large (25x25)</label>
+                        
+                        <input type="radio" id="sizeHuge" name="fieldSize" value="huge">
+                        <label for="sizeHuge">🏟️ Huge (30x30)</label>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Number of Bombs:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="bombs0" name="bombCount" value="0">
+                        <label for="bombs0">🌸 None (0)</label>
+                        
+                        <input type="radio" id="bombs1" name="bombCount" value="1" checked>
+                        <label for="bombs1">💣 Single (1)</label>
+                        
+                        <input type="radio" id="bombs3" name="bombCount" value="3">
+                        <label for="bombs3">💥 Few (3)</label>
+                        
+                        <input type="radio" id="bombs5" name="bombCount" value="5">
+                        <label for="bombs5">💀 Many (5)</label>
+                        
+                        <input type="radio" id="bombsCustom" name="bombCount" value="custom">
+                        <label for="bombsCustom">⚙️ Custom</label>
+                    </div>
+                    <div class="custom-bomb-input" id="customBombInput" style="display: none;">
+                        <input type="number" id="customBombNumber" min="0" max="100" value="2" placeholder="Enter number">
+                        <span class="max-bombs-text" id="maxBombsText">(Max: 90)</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group" id="speedGroup">
+                    <label>Speed:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="speedSlow" name="speed" value="slow">
+                        <label for="speedSlow">🐌 Slow</label>
+                        
+                        <input type="radio" id="speedMedium" name="speed" value="medium" checked>
+                        <label for="speedMedium">🚶 Medium</label>
+                        
+                        <input type="radio" id="speedFast" name="speed" value="fast">
+                        <label for="speedFast">🏃 Fast</label>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Borders:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="borderSolid" name="border" value="solid" checked>
+                        <label for="borderSolid">🧱 Solid</label>
+                        
+                        <input type="radio" id="borderWrap" name="border" value="wrap">
+                        <label for="borderWrap">🌀 Wrap Around</label>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Portals:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="portalsOn" name="portals" value="on" checked>
+                        <label for="portalsOn">🌀 Enabled</label>
+                        
+                        <input type="radio" id="portalsOff" name="portals" value="off">
+                        <label for="portalsOff">🚫 Disabled</label>
+                    </div>
+                    <div class="mode-description">
+                        <span style="font-size: 11px; color: #888;">Portals appear every +10 points and transport between 🏠 Home, 🌴 Jungle, and 🌌 Space</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group">
+                    <label>Snake Hit:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="snakeHitPause" name="snakeHit" value="pause" checked>
+                        <label for="snakeHitPause">⏸️ Pause</label>
+                        
+                        <input type="radio" id="snakeHitGameOver" name="snakeHit" value="gameOver">
+                        <label for="snakeHitGameOver">💥 Game Over</label>
+                    </div>
+                    <div class="mode-description">
+                        <span style="font-size: 11px; color: #888;">What happens when the snake hits itself</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group" id="singlePlayerColors">
+                    <label>Snake Color:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="colorGreen" name="snakeColor" value="green" checked>
+                        <label for="colorGreen">🟢 Green</label>
+                        
+                        <input type="radio" id="colorYellow" name="snakeColor" value="yellow">
+                        <label for="colorYellow">🟡 Yellow</label>
+                        
+                        <input type="radio" id="colorViolet" name="snakeColor" value="violet">
+                        <label for="colorViolet">🟣 Violet</label>
+                    </div>
+                    <div class="mode-description">
+                        <span style="font-size: 11px; color: #888;">Choose your snake's appearance</span>
+                    </div>
+                </div>
+                
+                <div class="setting-group" id="multiPlayerColors" style="display: none;">
+                    <label>Player 1 Color (Arrows ↑↓←→):</label>
+                    <div class="radio-group">
+                        <input type="radio" id="player1Green" name="player1Color" value="green" checked>
+                        <label for="player1Green">🟢 Green</label>
+                        
+                        <input type="radio" id="player1Yellow" name="player1Color" value="yellow">
+                        <label for="player1Yellow">🟡 Yellow</label>
+                        
+                        <input type="radio" id="player1Violet" name="player1Color" value="violet">
+                        <label for="player1Violet">🟣 Violet</label>
+                    </div>
+                    
+                    <label style="margin-top: 10px;">Player 2 Color (WASD):</label>
+                    <div class="radio-group">
+                        <input type="radio" id="player2Green" name="player2Color" value="green">
+                        <label for="player2Green">🟢 Green</label>
+                        
+                        <input type="radio" id="player2Yellow" name="player2Color" value="yellow" checked>
+                        <label for="player2Yellow">🟡 Yellow</label>
+                        
+                        <input type="radio" id="player2Violet" name="player2Color" value="violet">
+                        <label for="player2Violet">🟣 Violet</label>
+                    </div>
+                    <div class="mode-description">
+                        <span style="font-size: 11px; color: #888;">Choose colors for both players</span>
+                    </div>
+                </div>
+            </div>
+            
+            <button id="startButton" class="start-btn">Start Game</button>
+        </div>
+    </div>
+    
+    <script>
+        // Handle game mode radio button changes
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeRadios = document.querySelectorAll('input[name="gameMode"]');
+            const speedGroup = document.getElementById('speedGroup');
+            const competitiveDesc = document.getElementById('competitiveDesc');
+            const adventureDesc = document.getElementById('adventureDesc');
+            const bombRadios = document.querySelectorAll('input[name="bombCount"]');
+            const customBombInput = document.getElementById('customBombInput');
+            const customBombNumber = document.getElementById('customBombNumber');
+            const maxBombsText = document.getElementById('maxBombsText');
+            const fieldSizeRadios = document.querySelectorAll('input[name="fieldSize"]');
+            const playerModeRadios = document.querySelectorAll('input[name="playerMode"]');
+            const singlePlayerColors = document.getElementById('singlePlayerColors');
+            const multiPlayerColors = document.getElementById('multiPlayerColors');
+            
+            function updateModeDisplay() {
+                const selectedMode = document.querySelector('input[name="gameMode"]:checked').value;
+                
+                if (selectedMode === 'adventure') {
+                    speedGroup.style.display = 'none';
+                    competitiveDesc.style.display = 'none';
+                    adventureDesc.style.display = 'block';
+                } else {
+                    speedGroup.style.display = 'block';
+                    competitiveDesc.style.display = 'block';
+                    adventureDesc.style.display = 'none';
+                }
+            }
+            
+            function updatePlayerModeDisplay() {
+                const selectedPlayerMode = document.querySelector('input[name="playerMode"]:checked').value;
+                
+                if (selectedPlayerMode === 'multi') {
+                    singlePlayerColors.style.display = 'none';
+                    multiPlayerColors.style.display = 'block';
+                } else {
+                    singlePlayerColors.style.display = 'block';
+                    multiPlayerColors.style.display = 'none';
+                }
+            }
+            
+            function updateBombDisplay() {
+                const selectedBombCount = document.querySelector('input[name="bombCount"]:checked').value;
+                
+                if (selectedBombCount === 'custom') {
+                    customBombInput.style.display = 'flex';
+                } else {
+                    customBombInput.style.display = 'none';
+                }
+                
+                updateMaxBombs();
+            }
+            
+            function updateMaxBombs() {
+                const selectedFieldSize = document.querySelector('input[name="fieldSize"]:checked').value;
+                let fieldSize;
+                
+                switch(selectedFieldSize) {
+                    case 'small': fieldSize = 15; break;
+                    case 'medium': fieldSize = 20; break;
+                    case 'large': fieldSize = 25; break;
+                    case 'huge': fieldSize = 30; break;
+                    default: fieldSize = 20;
+                }
+                
+                const totalFields = fieldSize * fieldSize;
+                const maxBombs = Math.floor(totalFields * 0.3);
+                customBombNumber.max = maxBombs;
+                maxBombsText.textContent = `(Max: ${maxBombs})`;
+                
+                // Adjust current value if it exceeds max
+                if (parseInt(customBombNumber.value) > maxBombs) {
+                    customBombNumber.value = maxBombs;
+                }
+            }
+            
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', updateModeDisplay);
+            });
+            
+            playerModeRadios.forEach(radio => {
+                radio.addEventListener('change', updatePlayerModeDisplay);
+            });
+            
+            bombRadios.forEach(radio => {
+                radio.addEventListener('change', updateBombDisplay);
+            });
+            
+            fieldSizeRadios.forEach(radio => {
+                radio.addEventListener('change', updateMaxBombs);
+            });
+            
+            // Initialize display
+            updateModeDisplay();
+            updatePlayerModeDisplay();
+            updateBombDisplay();
+            updateMaxBombs();
+        });
+    </script>
+    <script src="level1.js"></script>
+    <script src="level2.js"></script>
+    <script src="level3.js"></script>
+    <script src="snake.js"></script>
+    <script>
+        // Initialize leaderboard file on load (read from leaderboard.txt if present)
+        window.addEventListener('load', () => {
+            // snake.js constructs SnakeGame, so we need to wait a tick to access the instance if needed.
+            // Our SnakeGame handles its own init sequence and will call initLeaderboardFile internally on load.
+        });
+    </script>
+</body>
+</html>
