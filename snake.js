@@ -468,8 +468,11 @@ class SnakeGame {
         });
         
         document.addEventListener('keydown', (e) => {
-            // Prevent arrow keys and WASD from scrolling the page
-            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
+            // Determine if user is typing in an input/textarea
+            const activeElTag = (document.activeElement && document.activeElement.tagName) || '';
+            const isTypingNow = activeElTag === 'INPUT' || activeElTag === 'TEXTAREA';
+            // Prevent arrow keys, WASD and Space from scrolling only when not typing and leaderboard not active
+            if (!this.highScoreInputActive && !isTypingNow && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyW', 'KeyA', 'KeyS', 'KeyD'].includes(e.code)) {
                 e.preventDefault();
             }
 
