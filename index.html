@@ -291,7 +291,7 @@
         </div>
         <div class="start-screen" id="startScreen">
             <h2>🐍 Snake and Snack 🐍</h2>
-            <p>Eat fruits, avoid bombs!</p>
+            <p>Game by Polinchen Porin, Nick and Quiri</p>
             
             <div class="settings">
                 <div class="setting-group">
@@ -469,7 +469,6 @@
     </div>
     
     <script>
-        // Handle game mode radio button changes
         document.addEventListener('DOMContentLoaded', function() {
             const modeRadios = document.querySelectorAll('input[name="gameMode"]');
             const speedGroup = document.getElementById('speedGroup');
@@ -539,7 +538,6 @@
                 customBombNumber.max = maxBombs;
                 maxBombsText.textContent = `(Max: ${maxBombs})`;
                 
-                // Adjust current value if it exceeds max
                 if (parseInt(customBombNumber.value) > maxBombs) {
                     customBombNumber.value = maxBombs;
                 }
@@ -573,10 +571,8 @@
     <script src="level3.js"></script>
     <script src="snake.js"></script>
     <script>
-        // Initialize leaderboard file on load (read from leaderboard.txt if present)
         window.addEventListener('load', () => {
-            // snake.js constructs SnakeGame, so we need to wait a tick to access the instance if needed.
-            // Our SnakeGame handles its own init sequence and will call initLeaderboardFile internally on load.
+            // Copyright N Ledentsov
         });
     </script>
 </body>
