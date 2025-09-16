@@ -145,6 +145,18 @@ class SnakeGame {
                 tail: new Image(),
                 headLoaded: false,
                 tailLoaded: false
+            },
+            blue: {
+                head: new Image(),
+                tail: new Image(),
+                headLoaded: false,
+                tailLoaded: false
+            },
+            red: {
+                head: new Image(),
+                tail: new Image(),
+                headLoaded: false,
+                tailLoaded: false
             }
         };
         
@@ -206,6 +218,46 @@ class SnakeGame {
         
         this.snakeImages.violet.tail.onerror = () => {
             this.snakeImages.violet.tailLoaded = false;
+        };
+        
+        // Load blue snake images
+        this.snakeImages.blue.head.src = 'images/head_B.png';
+        this.snakeImages.blue.tail.src = 'images/tail_B.png';
+        
+        this.snakeImages.blue.head.onload = () => {
+            this.snakeImages.blue.headLoaded = true;
+        };
+        
+        this.snakeImages.blue.head.onerror = () => {
+            this.snakeImages.blue.headLoaded = false;
+        };
+        
+        this.snakeImages.blue.tail.onload = () => {
+            this.snakeImages.blue.tailLoaded = true;
+        };
+        
+        this.snakeImages.blue.tail.onerror = () => {
+            this.snakeImages.blue.tailLoaded = false;
+        };
+        
+        // Load red snake images
+        this.snakeImages.red.head.src = 'images/head_R.png';
+        this.snakeImages.red.tail.src = 'images/tail_R.png';
+        
+        this.snakeImages.red.head.onload = () => {
+            this.snakeImages.red.headLoaded = true;
+        };
+        
+        this.snakeImages.red.head.onerror = () => {
+            this.snakeImages.red.headLoaded = false;
+        };
+        
+        this.snakeImages.red.tail.onload = () => {
+            this.snakeImages.red.tailLoaded = true;
+        };
+        
+        this.snakeImages.red.tail.onerror = () => {
+            this.snakeImages.red.tailLoaded = false;
         };
         
         // Explosion overlay state
@@ -330,7 +382,9 @@ class SnakeGame {
             portalsEnabled: this.portalsEnabled,
             snakeHitBehavior: this.snakeHitBehavior || 'pause',
             speedSetting: this.speedSetting || 'medium',
-            snakeColor: this.snakeColor || 'green'
+            snakeColor: this.snakeColor || 'green',
+            player1Color: this.player1Color || 'green',
+            player2Color: this.player2Color || 'yellow'
         };
         
         try {
@@ -363,6 +417,8 @@ class SnakeGame {
                 this.snakeHitBehavior = settings.snakeHitBehavior || 'pause';
                 this.speedSetting = settings.speedSetting || 'medium';
                 this.snakeColor = settings.snakeColor || 'green';
+                this.player1Color = settings.player1Color || 'green';
+                this.player2Color = settings.player2Color || 'yellow';
                 
                 // Update UI to reflect loaded settings
                 this.applySettingsToUI(settings);
@@ -428,6 +484,13 @@ class SnakeGame {
         // Set snake color
         const snakeColorRadio = document.querySelector(`input[name="snakeColor"][value="${settings.snakeColor || 'green'}"]`);
         if (snakeColorRadio) snakeColorRadio.checked = true;
+        
+        // Set player colors for multiplayer
+        const player1ColorRadio = document.querySelector(`input[name="player1Color"][value="${settings.player1Color || 'green'}"]`);
+        if (player1ColorRadio) player1ColorRadio.checked = true;
+        
+        const player2ColorRadio = document.querySelector(`input[name="player2Color"][value="${settings.player2Color || 'yellow'}"]`);
+        if (player2ColorRadio) player2ColorRadio.checked = true;
         
         // Trigger UI update events
         const updateModeEvent = new Event('change');
