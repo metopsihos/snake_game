@@ -461,8 +461,9 @@ class SnakeGame {
             return html;
         };
 
-        let activeTab = 'Competitive';
-        let activeSub = 'medium';
+        // Preserve previously selected tab/sub if present on the element
+        let activeTab = el.dataset.activeTab || 'Competitive';
+        let activeSub = el.dataset.activeSub || 'medium';
 
         const render = () => {
             const tabBtns = tabs.map(t => `<button data-tab="${t}" class="start-btn" style="padding:4px 8px;font-size:12px;${activeTab===t?'background:#2e7d32;color:#fff;':''}">${t}</button>`).join('');
@@ -472,8 +473,11 @@ class SnakeGame {
             el.innerHTML = `<div style=\"display:flex;gap:6px;justify-content:center;margin-bottom:8px;\">${tabBtns}</div>
                             <div style=\"display:flex;gap:6px;justify-content:center;margin-bottom:8px;\">${subBtns}</div>
                             ${listHtml}`;
-            el.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{ activeTab=b.getAttribute('data-tab'); activeSub=subTabs[activeTab][0]; render(); }));
-            el.querySelectorAll('button[data-sub]').forEach(b=>b.addEventListener('click',()=>{ activeSub=b.getAttribute('data-sub'); render(); }));
+            // Persist selection on the container element so re-renders keep the view
+            el.dataset.activeTab = activeTab;
+            el.dataset.activeSub = activeSub;
+            el.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{ activeTab=b.getAttribute('data-tab'); activeSub=subTabs[activeTab][0]; el.dataset.activeTab=activeTab; el.dataset.activeSub=activeSub; render(); }));
+            el.querySelectorAll('button[data-sub]').forEach(b=>b.addEventListener('click',()=>{ activeSub=b.getAttribute('data-sub'); el.dataset.activeSub=activeSub; render(); }));
         };
 
         render();
@@ -654,6 +658,7 @@ class SnakeGame {
                 this.startGame();
             });
         }
+        // No main menu clear button (moved to game over screen)
         
         // Window resize handler
         window.addEventListener('resize', () => {
@@ -1876,6 +1881,9 @@ class SnakeGame {
                 </div>
                 <div id=\"saveStatus\" style=\"min-height:18px;color:#777;font-size:12px;\"></div>
                 <div id=\"leaderboardContainer\" style=\"width:100%;max-width:520px;\"></div>
+                <div style=\"display:flex;gap:8px;align-items:center;justify-content:center;\">
+                    <button id=\"clearLeaderboardBtn\" class=\"start-btn\" style=\"padding:6px 10px;font-size:12px;background:#c0392b;\">Clear Leaderboard</button>
+                </div>
                 <div style=\"font-size:12px;color:#777;\">Press Enter to restart</div>
             </div>
         `;
@@ -1948,29 +1956,45 @@ class SnakeGame {
         }
 
         // Initialize leaderboard tabs with existing entries
-        if (leaderboardContainer) this.initLeaderboardTabs(entries);
-
-        // Auto-switch tabs to the mode played
-        const icons = this.getSettingsIcons();
-        const container = document.getElementById('leaderboardContainer');
-        if (container) {
-            // Defer until tabs render
-            setTimeout(() => {
-                const set = new Set(icons || []);
-                const isMath = set.has('➗');
-                const isAdventure = set.has('🗺️');
-                const mode = isMath ? 'Math' : (isAdventure ? 'Adventure' : 'Competitive');
-                let sub = 'medium';
-                if (mode==='Competitive') sub = set.has('🐌') ? 'slow' : (set.has('🏃') ? 'fast' : 'medium');
-                if (mode==='Adventure') sub = 'default';
-                if (mode==='Math') sub = set.has('＋') ? 'plus' : (set.has('－') ? 'minus' : (set.has('×') ? 'multiply' : (set.has('⨁') ? 'mixed' : (set.has('⤴') ? 'gradual' : 'mixed'))));
-                // Simulate clicks on buttons if present
-                const tabBtn = Array.from(container.querySelectorAll('button[data-tab]')).find(b=>b.getAttribute('data-tab')===mode);
-                if (tabBtn) tabBtn.click();
-                const subBtn = Array.from(container.querySelectorAll('button[data-sub]')).find(b=>b.getAttribute('data-sub')===sub);
-                if (subBtn) subBtn.click();
-            }, 50);
+        if (leaderboardContainer) {
+            // Auto-select tab/sub matching the played game mode for the initial render
+            let defaultTab = this.adventureMode ? 'Adventure' : 'Competitive';
+            let defaultSub = this.adventureMode ? 'default' : (this.speedSetting || 'medium');
+            if (this.mathGame && this.mathGame.isMathModeActive && this.mathGame.isMathModeActive()) {
+                defaultTab = 'Math';
+                const mm = (this.mathGame.getCurrentMode && this.mathGame.getCurrentMode()) || this.mathMode || 'mixed';
+                switch (mm) {
+                    case 'plus3': defaultSub = 'plus3'; break;
+                    case 'plus':
+                    case 'plus2': defaultSub = 'plus2'; break;
+                    case 'minus': defaultSub = 'minus'; break;
+                    case 'multiply': defaultSub = 'multiply'; break;
+                    case 'gradual': defaultSub = 'gradual'; break;
+                    default: defaultSub = 'mixed';
+                }
+            }
+            leaderboardContainer.dataset.activeTab = defaultTab;
+            leaderboardContainer.dataset.activeSub = defaultSub;
+            this.initLeaderboardTabs(entries);
         }
+
+        // Clear leaderboard button handler (only in game over UI)
+        const clearBtn = document.getElementById('clearLeaderboardBtn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                try {
+                    localStorage.removeItem('snakeLeaderboard');
+                } catch (e) {}
+                const container = document.getElementById('leaderboardContainer');
+                if (container) {
+                    this.initLeaderboardTabs([]);
+                }
+                const saveStatusEl = document.getElementById('saveStatus');
+                if (saveStatusEl) { saveStatusEl.textContent = 'Leaderboard cleared.'; saveStatusEl.style.color = '#2E7D32'; }
+            });
+        }
+
+        // Do not auto-switch tabs after rendering; keep current selection persistent
     }
     
     restart() {
