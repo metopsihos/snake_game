@@ -56,17 +56,6 @@
             font-weight: bold;
         }
         
-        .math-question {
-            font-size: 20px;
-            color: #2E7D32;
-            margin-bottom: 10px;
-            font-weight: bold;
-            background: rgba(76, 175, 80, 0.1);
-            padding: 8px 15px;
-            border-radius: 8px;
-            border: 2px solid rgba(76, 175, 80, 0.3);
-        }
-        
         .controls {
             margin-top: 15px;
             color: #666;
@@ -289,9 +278,6 @@
                 Player 1: <span id="player1Score">0</span> | Player 2: <span id="player2Score">0</span>
             </span>
         </div>
-        <div class="math-question" id="mathQuestion" style="display: none;">
-            <span id="mathQuestionText">Math Question</span>
-        </div>
         <div class="field-info">Field: <span id="currentField">🏠 Home</span></div>
         <canvas id="gameCanvas" width="600" height="600"></canvas>
         <div class="counters" id="fruitCounters"></div>
@@ -418,35 +404,6 @@
                 </div>
                 
                 <div class="setting-group">
-                    <label>Math Mode:</label>
-                    <div class="radio-group">
-                        <input type="radio" id="mathNone" name="mathMode" value="none" checked>
-                        <label for="mathNone">🚫 No Math</label>
-                        
-                        <input type="radio" id="mathPlus2" name="mathMode" value="plus2">
-                        <label for="mathPlus2">➕ Plus (2-digit sum)</label>
-
-                        <input type="radio" id="mathPlus3" name="mathMode" value="plus3">
-                        <label for="mathPlus3">➕ Plus (3-digit sum)</label>
-                        
-                        <input type="radio" id="mathMinus" name="mathMode" value="minus">
-                        <label for="mathMinus">➖ Minus</label>
-                        
-                        <input type="radio" id="mathMultiply" name="mathMode" value="multiply">
-                        <label for="mathMultiply">✖️ Multiply</label>
-                        
-                        <input type="radio" id="mathMixed" name="mathMode" value="mixed">
-                        <label for="mathMixed">🔀 Mixed</label>
-                        
-                        <input type="radio" id="mathGradual" name="mathMode" value="gradual">
-                        <label for="mathGradual">📈 Gradual</label>
-                    </div>
-                    <div class="mode-description">
-                        <span style="font-size: 11px; color: #888;">Math mode: Numbers replace fruits, eat correct answers to grow!</span>
-                    </div>
-                </div>
-                
-                <div class="setting-group">
                     <label>Snake Hit:</label>
                     <div class="radio-group">
                         <input type="radio" id="snakeHitPause" name="snakeHit" value="pause" checked>
@@ -477,9 +434,6 @@
                         
                         <input type="radio" id="colorRed" name="snakeColor" value="red">
                         <label for="colorRed">🔴 Red</label>
-                        
-                        <input type="radio" id="colorWhite" name="snakeColor" value="white">
-                        <label for="colorWhite">⚪ White</label>
                     </div>
                     <div class="mode-description">
                         <span style="font-size: 11px; color: #888;">Choose your snake's appearance</span>
@@ -503,9 +457,6 @@
                         
                         <input type="radio" id="player1Red" name="player1Color" value="red">
                         <label for="player1Red">🔴 Red</label>
-                        
-                        <input type="radio" id="player1White" name="player1Color" value="white">
-                        <label for="player1White">⚪ White</label>
                     </div>
                     
                     <label style="margin-top: 10px;">Player 2 Color (WASD):</label>
@@ -524,9 +475,6 @@
                         
                         <input type="radio" id="player2Red" name="player2Color" value="red">
                         <label for="player2Red">🔴 Red</label>
-                        
-                        <input type="radio" id="player2White" name="player2Color" value="white">
-                        <label for="player2White">⚪ White</label>
                     </div>
                     <div class="mode-description">
                         <span style="font-size: 11px; color: #888;">Choose colors for both players</span>
@@ -639,7 +587,6 @@
     <script src="level1.js"></script>
     <script src="level2.js"></script>
     <script src="level3.js"></script>
-    <script src="math.js"></script>
     <script src="snake.js"></script>
     <script>
         window.addEventListener('load', () => {

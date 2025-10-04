@@ -38,7 +38,6 @@ class SnakeGame {
         this.bombs = []; // array to hold multiple bombs
         this.portalsEnabled = true; // default portals enabled
         this.snakeHitBehavior = 'pause'; // default: pause when snake hits itself
-        this.mathMode = 'none'; // default no math mode
         
         // Field management
         this.fieldManager = null; // will be initialized after DOM load
@@ -158,12 +157,6 @@ class SnakeGame {
                 tail: new Image(),
                 headLoaded: false,
                 tailLoaded: false
-            },
-            white: {
-                head: new Image(),
-                tail: new Image(),
-                headLoaded: false,
-                tailLoaded: false
             }
         };
         
@@ -266,26 +259,6 @@ class SnakeGame {
         this.snakeImages.red.tail.onerror = () => {
             this.snakeImages.red.tailLoaded = false;
         };
-
-        // Load white snake images
-        this.snakeImages.white.head.src = 'images/head_W.png';
-        this.snakeImages.white.tail.src = 'images/tail_W.png';
-        
-        this.snakeImages.white.head.onload = () => {
-            this.snakeImages.white.headLoaded = true;
-        };
-        
-        this.snakeImages.white.head.onerror = () => {
-            this.snakeImages.white.headLoaded = false;
-        };
-        
-        this.snakeImages.white.tail.onload = () => {
-            this.snakeImages.white.tailLoaded = true;
-        };
-        
-        this.snakeImages.white.tail.onerror = () => {
-            this.snakeImages.white.tailLoaded = false;
-        };
         
         // Explosion overlay state
         this.explosionState = null;
@@ -297,9 +270,6 @@ class SnakeGame {
             fish: 0,
             bubble: 0
         };
-        
-        // Math game instance
-        this.mathGame = null;
         
         this.init();
     }
@@ -324,14 +294,13 @@ class SnakeGame {
     addLeaderboardEntry(playerName, score, icons) {
         const entries = this.loadLeaderboardData();
         entries.push({ name: playerName, score: score, ts: Date.now(), icons: Array.isArray(icons) ? icons : [] });
-        // Sort globally for consistency, but do not trim globally
         entries.sort((a, b) => b.score - a.score || a.ts - b.ts);
-        this.saveLeaderboardData(entries);
-        return entries;
+        const top5 = entries.slice(0, 5);
+        this.saveLeaderboardData(top5);
+        return top5;
     }
 
     renderLeaderboardHTML(entries) {
-        // Simple list (fallback used when JS interaction not needed)
         if (!entries || entries.length === 0) {
             return '<div style="margin-top:8px;color:#666;font-size:14px;">No scores yet. Be the first!</div>';
         }
@@ -365,17 +334,6 @@ class SnakeGame {
         const icons = [];
         // Mode
         icons.push(this.gameMode === 'adventure' ? '🗺️' : '⚡');
-        // Math mode indicator and type
-        if (this.mathGame && this.mathGame.isMathModeActive && this.mathGame.isMathModeActive()) {
-            icons.push('➗');
-            const mm = this.mathGame.getCurrentMode ? this.mathGame.getCurrentMode() : 'mixed';
-            if (mm === 'plus' || mm === 'plus2') icons.push('＋');
-            else if (mm === 'plus3') icons.push('＋3');
-            else if (mm === 'minus') icons.push('－');
-            else if (mm === 'multiply') icons.push('×');
-            else if (mm === 'mixed') icons.push('⨁');
-            else if (mm === 'gradual') icons.push('⤴');
-        }
         // Field size choice (approximate by base size selection; infer from min of width/height)
         // We stored speedSetting value and borderWrap/portalsEnabled already.
         // For field size, we approximate by current base density grouping.
@@ -403,82 +361,6 @@ class SnakeGame {
         return icons;
     }
 
-    // Initialize tabbed leaderboard view (Competitive/Adventure/Math with sub-tabs)
-    initLeaderboardTabs(entries) {
-        const el = document.getElementById('leaderboardContainer');
-        if (!el) return;
-
-        const tabs = ['Competitive','Adventure','Math'];
-        const subTabs = {
-            Competitive: ['slow','medium','fast'],
-            Adventure: ['default'],
-            Math: ['plus2','plus3','minus','multiply','mixed','gradual']
-        };
-
-        const modeOf = (icons) => {
-            const set = new Set(icons||[]);
-            if (set.has('➗')) return 'Math';
-            if (set.has('🗺️')) return 'Adventure';
-            return 'Competitive';
-        };
-        const subOf = (icons, mode) => {
-            const set = new Set(icons||[]);
-            if (mode==='Competitive') {
-                if (set.has('🐌')) return 'slow';
-                if (set.has('🏃')) return 'fast';
-                return 'medium';
-            }
-            if (mode==='Adventure') return 'default';
-            if (mode==='Math') {
-                if (set.has('＋3')) return 'plus3';
-                if (set.has('＋')) return 'plus2';
-                if (set.has('－')) return 'minus';
-                if (set.has('×')) return 'multiply';
-                if (set.has('⨁')) return 'mixed';
-                if (set.has('⤴')) return 'gradual';
-                return 'mixed';
-            }
-            return 'default';
-        };
-
-        const grouped = { Competitive:{slow:[],medium:[],fast:[]}, Adventure:{default:[]}, Math:{plus2:[],plus3:[],minus:[],multiply:[],mixed:[],gradual:[]} };
-        for (const e of (entries||[])) {
-            const m = modeOf(e.icons);
-            const s = subOf(e.icons, m);
-            grouped[m][s].push(e);
-        }
-
-        const renderList = (list) => {
-            if (!list || list.length===0) return '<div style="margin-top:8px;color:#666;font-size:14px;">No scores yet. Be the first!</div>';
-            let html = '<ol style="text-align:left;max-height:220px;overflow:auto;padding-left:20px;font-size:14px;line-height:1.35;">';
-            for (const e of list) {
-                const icons = Array.isArray(e.icons) ? e.icons.join(' ') : '';
-                const iconsHtml = icons ? ` <span style="opacity:.95">${icons}</span>` : '';
-                const nameHtml = `<strong>${this.escapeHtml(e.name || 'Player')}</strong>`;
-                html += `<li>${nameHtml} - ${e.score}${iconsHtml ? ' -' + iconsHtml : ''}</li>`;
-            }
-            html += '</ol>';
-            return html;
-        };
-
-        let activeTab = 'Competitive';
-        let activeSub = 'medium';
-
-        const render = () => {
-            const tabBtns = tabs.map(t => `<button data-tab="${t}" class="start-btn" style="padding:4px 8px;font-size:12px;${activeTab===t?'background:#2e7d32;color:#fff;':''}">${t}</button>`).join('');
-            const subs = subTabs[activeTab]||[];
-            const subBtns = subs.map(s => `<button data-sub="${s}" class="start-btn" style="padding:3px 6px;font-size:11px;${activeSub===s?'background:#2e7d32;color:#fff;':''}">${s}</button>`).join('');
-            const listHtml = renderList(grouped[activeTab][activeSub]);
-            el.innerHTML = `<div style=\"display:flex;gap:6px;justify-content:center;margin-bottom:8px;\">${tabBtns}</div>
-                            <div style=\"display:flex;gap:6px;justify-content:center;margin-bottom:8px;\">${subBtns}</div>
-                            ${listHtml}`;
-            el.querySelectorAll('button[data-tab]').forEach(b=>b.addEventListener('click',()=>{ activeTab=b.getAttribute('data-tab'); activeSub=subTabs[activeTab][0]; render(); }));
-            el.querySelectorAll('button[data-sub]').forEach(b=>b.addEventListener('click',()=>{ activeSub=b.getAttribute('data-sub'); render(); }));
-        };
-
-        render();
-    }
-
     // Removed file persistence; keeping leaderboard in localStorage only
 
     buildLeaderboardTxt(entries) {
@@ -502,8 +384,7 @@ class SnakeGame {
             speedSetting: this.speedSetting || 'medium',
             snakeColor: this.snakeColor || 'green',
             player1Color: this.player1Color || 'green',
-            player2Color: this.player2Color || 'yellow',
-            mathMode: this.mathMode || 'none'
+            player2Color: this.player2Color || 'yellow'
         };
         
         try {
@@ -538,7 +419,6 @@ class SnakeGame {
                 this.snakeColor = settings.snakeColor || 'green';
                 this.player1Color = settings.player1Color || 'green';
                 this.player2Color = settings.player2Color || 'yellow';
-                this.mathMode = settings.mathMode || 'none';
                 
                 // Update UI to reflect loaded settings
                 this.applySettingsToUI(settings);
@@ -546,11 +426,6 @@ class SnakeGame {
                 // Update field manager with loaded portal setting
                 if (this.fieldManager) {
                     this.fieldManager.portalsEnabled = this.portalsEnabled;
-                }
-                
-                // Update math game with loaded settings
-                if (this.mathGame) {
-                    this.mathGame.setMathMode(this.mathMode);
                 }
                 
                 return true;
@@ -617,10 +492,6 @@ class SnakeGame {
         const player2ColorRadio = document.querySelector(`input[name="player2Color"][value="${settings.player2Color || 'yellow'}"]`);
         if (player2ColorRadio) player2ColorRadio.checked = true;
         
-        // Set math mode
-        const mathModeRadio = document.querySelector(`input[name="mathMode"][value="${settings.mathMode || 'none'}"]`);
-        if (mathModeRadio) mathModeRadio.checked = true;
-        
         // Trigger UI update events
         const updateModeEvent = new Event('change');
         const updateBombEvent = new Event('change');
@@ -633,9 +504,6 @@ class SnakeGame {
         this.fieldManager = new FieldManager(this);
         // Initialize field manager with current settings
         this.fieldManager.portalsEnabled = this.portalsEnabled;
-
-        // Initialize math game
-        this.mathGame = new MathGame(this);
 
         // Initialize UI counters
         this.updateFruitCountersUI();
@@ -895,17 +763,6 @@ class SnakeGame {
     spawnFood() {
         // Remove existing food
         this.foods = [];
-        
-        if (this.mathGame && this.mathGame.isMathModeActive()) {
-            // Math mode: spawn numbers
-            this.spawnMathNumbers();
-        } else {
-            // Normal mode: spawn fruits
-            this.spawnFruits();
-        }
-    }
-    
-    spawnFruits() {
         // Target fruits: ~0.75% of total tiles (half of previous), rounded down
         const totalTiles = this.fieldWidth * this.fieldHeight;
         const target = Math.max(1, Math.floor(totalTiles * 0.0075));
@@ -925,85 +782,15 @@ class SnakeGame {
         }
     }
     
-    spawnMathNumbers() {
-        // Get numbers from math game (correct answer + wrong answers)
-        const numbers = this.mathGame.getNumbersForFood();
-        
-        for (let i = 0; i < numbers.length; i++) {
-            let newFood;
-            let attempts = 0;
-            do {
-                newFood = {
-                    x: Math.floor(Math.random() * this.fieldWidth),
-                    y: Math.floor(Math.random() * this.fieldHeight),
-                    type: {
-                        emoji: numbers[i].toString(),
-                        color: '#E8F5E8',
-                        points: 1,
-                        isMathNumber: true,
-                        number: numbers[i]
-                    }
-                };
-                attempts++;
-                if (attempts > 200) break;
-            } while (this.isPositionOccupied(newFood.x, newFood.y) && attempts <= 200);
-            this.foods.push(newFood);
-        }
-    }
-    
     spawnSingleFood() {
         // Spawn a single new food item
         let newFood;
         let attempts = 0;
         do {
-            if (this.mathGame && this.mathGame.isMathModeActive()) {
-                // In math mode, spawn a random number from the current question
-                const numbers = this.mathGame.getNumbersForFood();
-                const randomNumber = numbers[Math.floor(Math.random() * numbers.length)];
-                newFood = {
-                    x: Math.floor(Math.random() * this.fieldWidth),
-                    y: Math.floor(Math.random() * this.fieldHeight),
-                    type: {
-                        emoji: randomNumber.toString(),
-                        color: '#E8F5E8',
-                        points: 1,
-                        isMathNumber: true,
-                        number: randomNumber
-                    }
-                };
-            } else {
-                // Normal mode: spawn fruit
-                newFood = {
-                    x: Math.floor(Math.random() * this.fieldWidth),
-                    y: Math.floor(Math.random() * this.fieldHeight),
-                    type: this.foodTypes[Math.floor(Math.random() * this.foodTypes.length)]
-                };
-            }
-            attempts++;
-            if (attempts > 100) break;
-        } while (this.isPositionOccupied(newFood.x, newFood.y) && attempts <= 100);
-        
-        this.foods.push(newFood);
-    }
-    
-    spawnRandomMathNumber() {
-        // Spawn a new math number at a completely random location
-        let newFood;
-        let attempts = 0;
-        do {
-            // Get a random number from the current question
-            const numbers = this.mathGame.getNumbersForFood();
-            const randomNumber = numbers[Math.floor(Math.random() * numbers.length)];
             newFood = {
                 x: Math.floor(Math.random() * this.fieldWidth),
                 y: Math.floor(Math.random() * this.fieldHeight),
-                type: {
-                    emoji: randomNumber.toString(),
-                    color: '#E8F5E8',
-                    points: 1,
-                    isMathNumber: true,
-                    number: randomNumber
-                }
+                type: this.foodTypes[Math.floor(Math.random() * this.foodTypes.length)]
             };
             attempts++;
             if (attempts > 100) break;
@@ -1115,7 +902,6 @@ class SnakeGame {
         const portalsSetting = document.querySelector('input[name="portals"]:checked').value;
         const snakeHitSetting = document.querySelector('input[name="snakeHit"]:checked').value;
         const playerModeSetting = document.querySelector('input[name="playerMode"]:checked').value;
-        const mathModeSetting = document.querySelector('input[name="mathMode"]:checked').value;
         
         // Get color settings based on player mode
         let snakeColorSetting, player1ColorSetting, player2ColorSetting;
@@ -1211,45 +997,31 @@ class SnakeGame {
         // Set snake hit behavior
         this.snakeHitBehavior = snakeHitSetting;
         
-        // Set math mode
-        this.mathMode = mathModeSetting;
-        if (this.mathGame) {
-            this.mathGame.setMathMode(mathModeSetting);
-        }
-        
         // Set multiplayer mode and colors
         this.isMultiplayer = (playerModeSetting === 'multi');
         if (this.isMultiplayer) {
             this.player1Color = player1ColorSetting;
             this.player2Color = player2ColorSetting;
+            console.log('Multiplayer colors - Player 1:', this.player1Color, 'Player 2:', this.player2Color);
         } else {
             this.snakeColor = snakeColorSetting;
+            console.log('Single player color:', this.snakeColor);
         }
         
         // Update controls text based on game mode and player count
-        let controlsText = '';
         if (this.isMultiplayer) {
             if (this.adventureMode) {
-                controlsText = 'Player 1: Arrow keys | Player 2: WASD keys<br>';
+                this.controlsTextElement.innerHTML = 'Player 1: Arrow keys | Player 2: WASD keys<br>🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
             } else {
-                controlsText = 'Player 1: Arrow keys | Player 2: WASD keys | Press P to pause<br>';
+                this.controlsTextElement.innerHTML = 'Player 1: Arrow keys | Player 2: WASD keys | Press P to pause<br>🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
             }
         } else {
             if (this.adventureMode) {
-                controlsText = 'Press arrow keys to move the snake one step at a time!<br>';
+                this.controlsTextElement.innerHTML = 'Press arrow keys to move the snake one step at a time!<br>🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
             } else {
-                controlsText = 'Use arrow keys to change direction | Press P to pause<br>';
+                this.controlsTextElement.innerHTML = 'Use arrow keys to change direction | Press P to pause<br>🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
             }
         }
-        
-        // Add math mode or normal mode instructions
-        if (this.mathGame && this.mathGame.isMathModeActive()) {
-            controlsText += '🔢 Numbers = Correct answer: +1 & grow | Wrong answer: -1 & shrink &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
-        } else {
-            controlsText += '🍓 🍅 🍋 🍎 🍊 = +1 point &nbsp;&nbsp;&nbsp; 💣 = BOOM!';
-        }
-        
-        this.controlsTextElement.innerHTML = controlsText;
         
         this.gameStarted = true;
         this.gameRunning = true;
@@ -1324,8 +1096,11 @@ class SnakeGame {
     }
     
     movePlayer2() {
+        console.log('Game state - gameRunning:', this.gameRunning, 'gameStarted:', this.gameStarted);
+        console.log('Snake 2 position before move:', this.snake2);
         if (this.gameRunning && this.gameStarted) {
             this.updateSingleSnake(this.snake2, this.dx2, this.dy2, true);
+            console.log('Snake 2 position after move:', this.snake2);
             this.draw();
         }
     }
@@ -1382,24 +1157,8 @@ class SnakeGame {
         // In competitive mode, don't move if no direction set
         if (!this.adventureMode && dx === 0 && dy === 0) return false;
         
-        // Calculate new head position with 180° reversal prevention
-        let newX = snake[0].x + dx;
-        let newY = snake[0].y + dy;
-        
-        // If the next move would go directly into the neck segment,
-        // force continuing in the previous direction instead.
-        if (snake.length > 1) {
-            const neck = snake[1];
-            if (newX === neck.x && newY === neck.y) {
-                const prevDx = snake[0].x - neck.x;
-                const prevDy = snake[0].y - neck.y;
-                dx = prevDx;
-                dy = prevDy;
-                newX = snake[0].x + dx;
-                newY = snake[0].y + dy;
-            }
-        }
-        const head = {x: newX, y: newY};
+        // Calculate new head position
+        const head = {x: snake[0].x + dx, y: snake[0].y + dy};
         
         // Prevent movement that would cause immediate self-collision
         // Check if the new head position would collide with the body
@@ -1442,65 +1201,46 @@ class SnakeGame {
             }
         }
         
-        // Check food collision first to determine if snake should grow
+        // Add new head
+        snake.unshift(head);
+        
+        // Check food collision
         let ateFood = false;
-        let shouldGrowSnake = true;
         for (let i = this.foods.length - 1; i >= 0; i--) {
             const food = this.foods[i];
             if (head.x === food.x && head.y === food.y) {
-                let scoreChange = food.type.points;
-                let shouldGrow = true;
-                
-                // Handle math mode scoring
-                if (this.mathGame && this.mathGame.isMathModeActive() && food.type.isMathNumber) {
-                    const mathResult = this.mathGame.onFoodEaten(food.type.number, isPlayer2);
-                    if (mathResult) {
-                        scoreChange = mathResult.scoreChange;
-                        shouldGrow = mathResult.grow;
-                    }
-                }
-                
                 // Update individual or combined score based on mode
                 if (this.isMultiplayer) {
                     if (isPlayer2) {
-                        this.player2Score = Math.max(0, this.player2Score + scoreChange);
+                        this.player2Score += food.type.points;
                     } else {
-                        this.player1Score = Math.max(0, this.player1Score + scoreChange);
+                        this.player1Score += food.type.points;
                     }
                     this.updateScoreDisplay();
                 } else {
-                    this.score = Math.max(0, this.score + scoreChange);
+                    this.score += food.type.points;
                     this.scoreElement.textContent = this.score;
                 }
-                
-                // Remove the food from the field
                 this.foods.splice(i, 1);
                 ateFood = true;
                 
-                if (this.mathGame && this.mathGame.isMathModeActive() && food.type.isMathNumber) {
-                    // Math mode: determine if snake grows or shrinks based on answer
-                    shouldGrowSnake = shouldGrow;
-                    
-                    if (shouldGrow) {
-                        // Correct answer: generate new question and update numbers
-                        this.mathGame.generateNewQuestion();
-                        this.spawnRandomMathNumber();
-                        this.mathGame.updateAllNumbers(this.foods);
-                    } else {
-                        // Wrong answer: just spawn new number
-                        this.spawnRandomMathNumber();
-                    }
-                } else {
-                    // Normal mode: snake always grows
-                    shouldGrowSnake = true;
-                    this.spawnSingleFood();
-                }
+                // Spawn new food to replace eaten one
+                let newFood;
+                let attempts = 0;
+                do {
+                    newFood = {
+                        x: Math.floor(Math.random() * this.fieldWidth),
+                        y: Math.floor(Math.random() * this.fieldHeight),
+                        type: this.foodTypes[Math.floor(Math.random() * this.foodTypes.length)]
+                    };
+                    attempts++;
+                    if (attempts > 100) break;
+                } while (this.isPositionOccupied(newFood.x, newFood.y) && attempts <= 100);
+                
+                this.foods.push(newFood);
                 break;
             }
         }
-        
-        // Add new head to snake
-        snake.unshift(head);
         
         // Check bomb collision
         for (let bomb of this.bombs) {
@@ -1517,16 +1257,8 @@ class SnakeGame {
             this.fieldManager.handleEnemyCollision(head);
         }
         
-        // Handle snake growth/shrinking based on food eaten
-        if (ateFood) {
-            if (shouldGrowSnake === false) {
-                // Wrong answer: net -1 length (head added earlier). Do not shrink below 1.
-                if (snake.length > 1) snake.pop();
-                if (snake.length > 1) snake.pop();
-            }
-            // Correct answer: keep tail (net +1 from the added head)
-        } else {
-            // No food eaten: keep same length (remove tail added to balance new head)
+        // Remove tail if no food was eaten
+        if (!ateFood) {
             snake.pop();
         }
         
@@ -1534,11 +1266,6 @@ class SnakeGame {
         if (this.fieldManager && this.fieldManager.checkPortalCollision(head)) {
             // Portal entry handled in fieldManager
             this.currentFieldElement.textContent = this.fieldManager.getCurrentFieldName();
-            
-            // Handle gradual math mode progression
-            if (this.mathGame && this.mathGame.getCurrentMode() === 'gradual') {
-                this.mathGame.onPortalEntered();
-            }
         }
         
         return true;
@@ -1692,6 +1419,7 @@ class SnakeGame {
         // Only draw foods and bomb if game has started
         if (this.gameStarted) {
         // Draw foods
+        this.ctx.font = `${this.gridSize - 6}px Arial`;
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
         
@@ -1699,65 +1427,33 @@ class SnakeGame {
             const x = food.x * this.gridSize;
             const y = food.y * this.gridSize;
             
-            if (food.type.isMathNumber) {
-                // Draw math number in bold
+            // Find the food type index
+            const foodTypeIndex = this.foodTypes.findIndex(type => type.emoji === food.type.emoji);
+            
+            // Try to draw image first, fallback to emoji if image not loaded
+            if (foodTypeIndex !== -1 && this.fruitImages[foodTypeIndex] && this.fruitImages[foodTypeIndex].loaded) {
+                // Draw fruit image
+                this.ctx.drawImage(
+                    this.fruitImages[foodTypeIndex].image,
+                    x + 2, 
+                    y + 2, 
+                    this.gridSize - 4, 
+                    this.gridSize - 4
+                );
+            } else {
+                // Fallback to emoji rendering
                 const centerX = x + this.gridSize / 2;
                 const centerY = y + this.gridSize / 2;
                 
-                // Draw background circle with light color
-                this.ctx.fillStyle = '#F0F8F0';
+                // Draw background circle
+                this.ctx.fillStyle = food.type.color;
                 this.ctx.beginPath();
                 this.ctx.arc(centerX, centerY, this.gridSize / 2 - 3, 0, 2 * Math.PI);
                 this.ctx.fill();
                 
-                // Draw border
-                this.ctx.strokeStyle = '#4CAF50';
-                this.ctx.lineWidth = 2;
-                this.ctx.stroke();
-                
-                // Draw number in bold black; dynamically shrink to fit inside bubble
-                const textValue = String(food.type.emoji || '');
-                let fontSizePx = this.gridSize - 4; // start near-full
-                const maxTextWidth = this.gridSize - 12; // leave padding inside circle
-                do {
-                    this.ctx.font = `bold ${fontSizePx}px Arial`;
-                    if (this.ctx.measureText(textValue).width <= maxTextWidth) break;
-                    fontSizePx -= 1;
-                } while (fontSizePx > 8);
-                this.ctx.fillStyle = 'black';
-                this.ctx.fillText(textValue, centerX, centerY);
-            } else {
-                // Draw regular fruit
-                this.ctx.font = `${this.gridSize - 6}px Arial`;
-                
-                // Find the food type index
-                const foodTypeIndex = this.foodTypes.findIndex(type => type.emoji === food.type.emoji);
-                
-                // Try to draw image first, fallback to emoji if image not loaded
-                if (foodTypeIndex !== -1 && this.fruitImages[foodTypeIndex] && this.fruitImages[foodTypeIndex].loaded) {
-                    // Draw fruit image
-                    this.ctx.drawImage(
-                        this.fruitImages[foodTypeIndex].image,
-                        x + 2, 
-                        y + 2, 
-                        this.gridSize - 4, 
-                        this.gridSize - 4
-                    );
-                } else {
-                    // Fallback to emoji rendering
-                    const centerX = x + this.gridSize / 2;
-                    const centerY = y + this.gridSize / 2;
-                    
-                    // Draw background circle
-                    this.ctx.fillStyle = food.type.color;
-                    this.ctx.beginPath();
-                    this.ctx.arc(centerX, centerY, this.gridSize / 2 - 3, 0, 2 * Math.PI);
-                    this.ctx.fill();
-                    
-                    // Draw emoji
-                    this.ctx.fillStyle = 'white';
-                    this.ctx.fillText(food.type.emoji, centerX, centerY);
-                }
+                // Draw emoji
+                this.ctx.fillStyle = 'white';
+                this.ctx.fillText(food.type.emoji, centerX, centerY);
             }
         }
         
@@ -1864,8 +1560,9 @@ class SnakeGame {
     }
 
     renderGameOverUI(currentScore) {
-        // Build leaderboard UI (tabbed)
+        // Build leaderboard UI (no download button)
         const entries = this.loadLeaderboardData();
+        const listHtml = this.renderLeaderboardHTML(entries);
         this.gameOverElement.innerHTML = `
             <div style="font-size:26px;margin-bottom:8px;">🐍 Game Over! 🐍</div>
             <div style="margin-bottom:12px;">Your score: <strong>${currentScore}</strong></div>
@@ -1875,7 +1572,7 @@ class SnakeGame {
                     <button id=\"saveScoreBtn\" class=\"start-btn\" style=\"padding:8px 14px;font-size:14px;\">Save Score</button>
                 </div>
                 <div id=\"saveStatus\" style=\"min-height:18px;color:#777;font-size:12px;\"></div>
-                <div id=\"leaderboardContainer\" style=\"width:100%;max-width:520px;\"></div>
+                <div id=\"leaderboardContainer\" style=\"width:100%;max-width:460px;\">${listHtml}</div>
                 <div style=\"font-size:12px;color:#777;\">Press Enter to restart</div>
             </div>
         `;
@@ -1889,52 +1586,18 @@ class SnakeGame {
 
         const saveAction = () => {
             const name = (nameInput?.value || '').trim().slice(0, 24) || 'Player';
-            // Qualify per-mode top 20, not global
-            const icons = this.getSettingsIcons();
-            const mode = (function(set){
-                if (set.has('➗')) return 'Math';
-                if (set.has('🗺️')) return 'Adventure';
-                return 'Competitive';
-            })(new Set(icons));
-            const sub = (function(set,mode){
-                if (mode==='Competitive') {
-                    if (set.has('🐌')) return 'slow';
-                    if (set.has('🏃')) return 'fast';
-                    return 'medium';
-                }
-                if (mode==='Adventure') return 'default';
-            if (mode==='Math') {
-                if (set.has('＋3')) return 'plus3';
-                if (set.has('＋')) return 'plus2';
-                    if (set.has('－')) return 'minus';
-                    if (set.has('×')) return 'multiply';
-                    if (set.has('⨁')) return 'mixed';
-                    if (set.has('⤴')) return 'gradual';
-                    return 'mixed';
-                }
-                return 'default';
-            })(new Set(icons), mode);
-
-            const all = (this.loadLeaderboardData() || []).slice();
-            // Filter existing entries for same mode/sub
-            const filtered = all.filter(e => {
-                const s = new Set(e.icons||[]);
-                const m = s.has('➗') ? 'Math' : (s.has('🗺️') ? 'Adventure' : 'Competitive');
-                let sb = 'default';
-                if (m==='Competitive') sb = s.has('🐌') ? 'slow' : (s.has('🏃') ? 'fast' : 'medium');
-                if (m==='Math') sb = s.has('＋') ? 'plus' : (s.has('－') ? 'minus' : (s.has('×') ? 'multiply' : (s.has('⨁') ? 'mixed' : (s.has('⤴') ? 'gradual' : 'mixed'))));
-                return m===mode && sb===sub;
-            });
-            filtered.sort((a,b)=> b.score - a.score || a.ts - b.ts);
-            const limit = 20;
-            const qualifies = filtered.length < limit || currentScore >= (filtered[filtered.length-1]?.score || 0);
+            // Only save if qualifies for Top 5
+            const existing = (this.loadLeaderboardData() || []).slice();
+            existing.sort((a,b)=> b.score - a.score || a.ts - b.ts);
+            const qualifies = existing.length < 5 || currentScore >= (existing[existing.length - 1]?.score || 0);
             if (qualifies) {
-                const updated = this.addLeaderboardEntry(name, currentScore, icons);
-                if (leaderboardContainer) this.initLeaderboardTabs(updated);
+                const updated = this.addLeaderboardEntry(name, currentScore, this.getSettingsIcons());
+                if (leaderboardContainer) leaderboardContainer.innerHTML = this.renderLeaderboardHTML(updated);
                 if (saveBtn) { saveBtn.textContent = 'Saved!'; saveBtn.disabled = true; }
                 if (saveStatus) { saveStatus.textContent = 'Saved to leaderboard.'; saveStatus.style.color = '#2E7D32'; }
+                // Local-only; no file persistence
             } else {
-                if (saveStatus) { saveStatus.textContent = `Score not in Top ${limit} for this mode.`; saveStatus.style.color = '#c0392b'; }
+                if (saveStatus) { saveStatus.textContent = 'Score not in Top 5. Try again!'; saveStatus.style.color = '#c0392b'; }
             }
         };
 
@@ -1945,31 +1608,6 @@ class SnakeGame {
             nameInput.addEventListener('blur', () => { this.highScoreInputActive = false; });
             // Focus the input automatically
             setTimeout(() => nameInput.focus(), 100);
-        }
-
-        // Initialize leaderboard tabs with existing entries
-        if (leaderboardContainer) this.initLeaderboardTabs(entries);
-
-        // Auto-switch tabs to the mode played
-        const icons = this.getSettingsIcons();
-        const container = document.getElementById('leaderboardContainer');
-        if (container) {
-            // Defer until tabs render
-            setTimeout(() => {
-                const set = new Set(icons || []);
-                const isMath = set.has('➗');
-                const isAdventure = set.has('🗺️');
-                const mode = isMath ? 'Math' : (isAdventure ? 'Adventure' : 'Competitive');
-                let sub = 'medium';
-                if (mode==='Competitive') sub = set.has('🐌') ? 'slow' : (set.has('🏃') ? 'fast' : 'medium');
-                if (mode==='Adventure') sub = 'default';
-                if (mode==='Math') sub = set.has('＋') ? 'plus' : (set.has('－') ? 'minus' : (set.has('×') ? 'multiply' : (set.has('⨁') ? 'mixed' : (set.has('⤴') ? 'gradual' : 'mixed'))));
-                // Simulate clicks on buttons if present
-                const tabBtn = Array.from(container.querySelectorAll('button[data-tab]')).find(b=>b.getAttribute('data-tab')===mode);
-                if (tabBtn) tabBtn.click();
-                const subBtn = Array.from(container.querySelectorAll('button[data-sub]')).find(b=>b.getAttribute('data-sub')===sub);
-                if (subBtn) subBtn.click();
-            }, 50);
         }
     }
     
@@ -2073,4 +1711,3 @@ window.addEventListener('load', () => {
         game.loadSettings();
     }, 200);
 });
-

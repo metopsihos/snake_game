@@ -214,10 +214,6 @@ class FieldManager {
 
     // Choose portal destination based on current field
     chooseDestination() {
-        // In math mode, always send portals to the Home (normal) field
-        if (this.game && this.game.mathGame && this.game.mathGame.isMathModeActive && this.game.mathGame.isMathModeActive()) {
-            return 'normal';
-        }
         const nonHome = ['jungle', 'space', 'sea'];
         if (this.currentField === 'normal') {
             // Start a new cycle from home
