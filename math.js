@@ -23,39 +23,11 @@ class MathGame {
     }
     
     loadMathProblems() {
-        // Load plus problems
-        fetch('math/plus.txt')
-            .then(response => response.text())
-            .then(data => {
-                this.mathProblems.plus = this.parseMathProblems(data);
-                this.ensurePlusHasThreeDigitMix();
-            })
-            .catch(error => {
-                console.warn('Could not load plus.txt:', error);
-                this.mathProblems.plus = this.generateDefaultProblems('plus');
-            });
-        
-        // Load minus problems
-        fetch('math/minus.txt')
-            .then(response => response.text())
-            .then(data => {
-                this.mathProblems.minus = this.parseMathProblems(data);
-            })
-            .catch(error => {
-                console.warn('Could not load minus.txt:', error);
-                this.mathProblems.minus = this.generateDefaultProblems('minus');
-            });
-        
-        // Load multiply problems
-        fetch('math/mal.txt')
-            .then(response => response.text())
-            .then(data => {
-                this.mathProblems.multiply = this.parseMathProblems(data);
-            })
-            .catch(error => {
-                console.warn('Could not load mal.txt:', error);
-                this.mathProblems.multiply = this.generateDefaultProblems('multiply');
-            });
+		// Generate problems in-code (no file loading)
+		this.mathProblems.plus = this.generatePlusTwoDigitSumProblems(200);
+		this.ensurePlusHasThreeDigitMix();
+		this.mathProblems.minus = this.generateMinusTwoDigitPositiveProblems(200);
+		this.mathProblems.multiply = this.generateMultiplySingleDigitAllProblems();
     }
 
     // Ensure PLUS mode includes some three-digit sums (100-999)
@@ -87,6 +59,68 @@ class MathGame {
         }
         return extras;
     }
+
+	// Generate PLUS: both operands are two-digit (10..99) and the sum is two-digit (10..99)
+	generatePlusTwoDigitSumProblems(count = 200) {
+		const problems = [];
+		const used = new Set();
+		while (problems.length < count) {
+			const num1 = Math.floor(Math.random() * 90) + 10; // 10..99
+			const num2 = Math.floor(Math.random() * 90) + 10; // 10..99
+			const sum = num1 + num2; // min 20, max 198
+			if (sum < 10 || sum > 99) continue; // ensure two-digit result
+			const key = num1 <= num2 ? `${num1}+${num2}` : `${num2}+${num1}`; // avoid duplicates regardless of order
+			if (used.has(key)) continue;
+			used.add(key);
+			problems.push({
+				num1,
+				operator: '+',
+				num2,
+				answer: sum,
+				question: `${num1} + ${num2} = ?`
+			});
+		}
+		return problems;
+	}
+
+	// Generate MINUS: both operands are two-digit (10..99) and result is strictly positive (x > y)
+	generateMinusTwoDigitPositiveProblems(count = 200) {
+		const problems = [];
+		const used = new Set();
+		while (problems.length < count) {
+			const a = Math.floor(Math.random() * 90) + 10; // 10..99
+			const b = Math.floor(Math.random() * 90) + 10; // 10..99
+			if (a <= b) continue; // strictly positive result
+			const key = `${a}-${b}`;
+			if (used.has(key)) continue;
+			used.add(key);
+			problems.push({
+				num1: a,
+				operator: '-',
+				num2: b,
+				answer: a - b,
+				question: `${a} - ${b} = ?`
+			});
+		}
+		return problems;
+	}
+
+	// Generate MULTIPLY: all single-digit combinations 1..9 × 1..9
+	generateMultiplySingleDigitAllProblems() {
+		const problems = [];
+		for (let i = 1; i <= 9; i++) {
+			for (let j = 1; j <= 9; j++) {
+				problems.push({
+					num1: i,
+					operator: '*',
+					num2: j,
+					answer: i * j,
+					question: `${i} × ${j} = ?`
+				});
+			}
+		}
+		return problems;
+	}
     
     parseMathProblems(data) {
         const lines = data.split('\n').filter(line => line.trim());
